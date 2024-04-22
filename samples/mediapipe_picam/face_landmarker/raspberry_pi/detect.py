@@ -63,7 +63,7 @@ def run(model: str, num_faces: int,
     # Visualization parameters
     row_size = 50  # pixels
     left_margin = 24  # pixels
-    text_color = (0, 0, 0)  # black
+    text_color = (0, 0, 255)  # red
     font_size = 1
     font_thickness = 1
     fps_avg_frame_count = 10
@@ -97,6 +97,12 @@ def run(model: str, num_faces: int,
         result_callback=save_result)
     detector = vision.FaceLandmarker.create_from_options(options)
 
+    # Create a named window for pose_landmarker
+    cv2.namedWindow('face_landmarker', cv2.WINDOW_NORMAL)
+
+    # Show the pose_landmarker window in fullscreen mode
+    cv2.setWindowProperty('face_landmarker', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
     # Continuously capture images from the camera and run inference
     while True:
         # Capture a frame from the camera
@@ -109,7 +115,8 @@ def run(model: str, num_faces: int,
 
         # Run face landmarker using the model.
         detector.detect_async(mp_image, time.time_ns() // 1_000_000)
-
+        
+                
         # Show the FPS
         fps_text = 'FPS = {:.1f}'.format(FPS)
         text_location = (left_margin, row_size)
@@ -117,6 +124,8 @@ def run(model: str, num_faces: int,
         cv2.putText(current_frame, fps_text, text_location,
                     cv2.FONT_HERSHEY_DUPLEX,
                     font_size, text_color, font_thickness, cv2.LINE_AA)
+        
+        
 
         if DETECTION_RESULT:
             # Draw landmarks.
@@ -156,16 +165,37 @@ def run(model: str, num_faces: int,
                                            label_padding_width,
                                            cv2.BORDER_CONSTANT, None,
                                            label_background_color)
-
+        
+        
+        my_text1 = "Face Landmarker"
+        my_text2 = "With Raspberry Pi CM4"
+        legend_x = current_frame.shape[1] - label_padding_width  # Starting X-coordinate (20 as a margin)
+        # show the text
+        cv2.putText(current_frame, my_text1,
+                    (legend_x+350, 100 + (16 // 2) + 5),
+                    # Position adjusted for vertical centering
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    3,  # Font size 0.4
+                    (31, 195, 143),  # Black color
+                    9,
+                    cv2.LINE_AA)  # Thickness
+        cv2.putText(current_frame, my_text2,
+                    (legend_x+200, 200 + (16 // 2) + 5),
+                    # Position adjusted for vertical centering
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    3,  # Font size 0.4
+                    (58, 87, 0),  # Black color
+                    9,
+                    cv2.LINE_AA)  # Thickness
+        
         if DETECTION_RESULT:
             # Define parameters for the bars and text
-            legend_x = current_frame.shape[
-                           1] - label_padding_width + 20  # Starting X-coordinate (20 as a margin)
-            legend_y = 30  # Starting Y-coordinate
-            bar_max_width = label_padding_width - 40  # Max width of the bar with some margin
-            bar_height = 8  # Height of the bar
-            gap_between_bars = 5  # Gap between two bars
-            text_gap = 5  # Gap between the end of the text and the start of the bar
+            legend_x = current_frame.shape[1] - label_padding_width + 40  # Starting X-coordinate (20 as a margin)
+            legend_y = 300  # Starting Y-coordinate
+            bar_max_width = label_padding_width - 40  # Max width of the bar with some margin 40
+            bar_height = 16  # Height of the bar
+            gap_between_bars = 10  # Gap between two bars
+            text_gap = 10  # Gap between the end of the text and the start of the bar
 
             face_blendshapes = DETECTION_RESULT.face_blendshapes
 
@@ -173,19 +203,19 @@ def run(model: str, num_faces: int,
                 for idx, category in enumerate(face_blendshapes[0]):
                     category_name = category.category_name
                     score = round(category.score, 2)
-
+                                                            
                     # Prepare text and get its width
                     text = "{} ({:.2f})".format(category_name, score)
                     (text_width, _), _ = cv2.getTextSize(text,
                                                          cv2.FONT_HERSHEY_SIMPLEX,
-                                                         0.4, 1)
+                                                         0.8, 1)
 
                     # Display the blendshape name and score
                     cv2.putText(current_frame, text,
                                 (legend_x, legend_y + (bar_height // 2) + 5),
                                 # Position adjusted for vertical centering
                                 cv2.FONT_HERSHEY_SIMPLEX,
-                                0.4,  # Font size
+                                0.8,  # Font size 0.4
                                 (0, 0, 0),  # Black color
                                 1,
                                 cv2.LINE_AA)  # Thickness
@@ -198,7 +228,7 @@ def run(model: str, num_faces: int,
                                   (legend_x + text_width + text_gap, legend_y),
                                   (legend_x + text_width + text_gap + bar_width,
                                    legend_y + bar_height),
-                                  (0, 255, 0),  # Green color
+                                  (255, 0, 0),  # Green color 0,255,0
                                   -1)  # Filled bar
 
                     # Update the Y-coordinate for the next bar
@@ -207,7 +237,7 @@ def run(model: str, num_faces: int,
         cv2.imshow('face_landmarker', current_frame)
 
         # Stop the program if the ESC key is pressed.
-        if cv2.waitKey(1) == 27:
+        if cv2.waitKey(1) == ord('q'):
             break
 
     detector.close()
@@ -221,12 +251,12 @@ def main():
         '--model',
         help='Name of face landmarker model.',
         required=False,
-        default='face_landmarker.task')
+        default='/home/pi/Seeed_Python_ReTerminal/samples/mediapipe_picam/face_landmarker/raspberry_pi/face_landmarker.task')
     parser.add_argument(
         '--numFaces',
         help='Max number of faces that can be detected by the landmarker.',
         required=False,
-        default=1)
+        default=2)
     parser.add_argument(
         '--minFaceDetectionConfidence',
         help='The minimum confidence score for face detection to be considered '
@@ -254,7 +284,7 @@ def main():
         '--frameHeight',
         help='Height of frame to capture from camera.',
         required=False,
-        default=960)
+        default=1706)
     args = parser.parse_args()
 
     run(args.model, int(args.numFaces), args.minFaceDetectionConfidence,
